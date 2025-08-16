@@ -1,6 +1,7 @@
 ﻿using AirportTicketBookingSystem.Models;
 using AirportTicketBookingSystem.Services;
-using AirportTicketBookingSystem.Helpers;
+using System;
+using System.Collections.Generic;
 
 namespace AirportTicketBookingSystem
 {
@@ -9,32 +10,28 @@ namespace AirportTicketBookingSystem
         static void Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
-            Console.WriteLine("Welcome to the Airport Ticket Booking System (Manager Mode)\n");
+            Console.WriteLine("Welcome to the Airport Ticket Booking System\n");
 
-            ValidationPrinter.PrintValidationRules<Flight>();
+            var bookings = new List<Booking>(); // Stored in-memory for now
 
-            Console.Write("Enter the path to the CSV file (or just the file name if it's in the same folder): ");
-            var filePath = Console.ReadLine();
+            Console.WriteLine("Select mode:");
+            Console.WriteLine("1: Manager");
+            Console.WriteLine("2: Passenger");
+            Console.Write("Choice: ");
+            var choice = Console.ReadLine();
 
-            if (string.IsNullOrWhiteSpace(filePath))
+            switch (choice)
             {
-                Console.WriteLine("File path is required.");
-                return;
-            }
-
-            var importer = new CsvFlightImporter();
-            var (flights, errors) = importer.ImportFlightsFromCsv(filePath);
-
-            FlightPrinter.PrintErrors(errors);
-
-            if (flights.Any())
-            {
-                FlightPrinter.PrintFlights(flights);
-                Console.WriteLine("\nSystem ready. You can now continue with booking, searching, etc...");
-            }
-            else
-            {
-                Console.WriteLine("No valid flights were imported.");
+                case "1":
+                    var manager = new ManagerService(bookings);
+                    manager.Start();
+                    break;
+                case "2":
+                    Console.WriteLine("Passenger mode not implemented yet.");
+                    break;
+                default:
+                    Console.WriteLine("Invalid choice.");
+                    break;
             }
         }
     }
