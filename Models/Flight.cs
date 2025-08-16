@@ -29,7 +29,13 @@ namespace AirportTicketBookingSystem.Models
         public DateTime DepartureDate { get; set; }
 
         [Range(0, double.MaxValue)]
-        public decimal BasePrice { get; set; }
+        public decimal EconomyPrice { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal BusinessPrice { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal FirstClassPrice { get; set; }
 
         public int EconomySeats { get; set; }
         public int BusinessSeats { get; set; }
