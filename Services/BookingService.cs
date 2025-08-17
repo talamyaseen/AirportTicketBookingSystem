@@ -1,21 +1,16 @@
-﻿using AirportTicketBookingSystem.Models;
-using AirportTicketBookingSystem.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AirportTicketBookingSystem.Enums;
+using AirportTicketBookingSystem.Extensions;
+using AirportTicketBookingSystem.Models;
+using AirportTicketBookingSystem.Storage;
 
 namespace AirportTicketBookingSystem.Services
 {
-    public class BookingService
+    public interface IBookingService
     {
-        private readonly List<Booking> _bookings;
-
-        public BookingService(List<Booking> bookings)
-        {
-            _bookings = bookings;
-        }
-
-        public IEnumerable<Booking> FilterBookings(
+        IEnumerable<Booking> FilterBookings(
             string? passengerName = null,
             string? flightNumber = null,
             string? departureCountry = null,
@@ -24,38 +19,96 @@ namespace AirportTicketBookingSystem.Services
             string? arrivalAirport = null,
             DateTime? departureDate = null,
             FlightClass? flightClass = null,
-            decimal? maxPrice = null
-        )
+            decimal? maxPrice = null);
+
+        Booking CreateBooking(Passenger passenger, Flight flight, FlightClass @class);
+        bool CancelBooking(string bookingId);
+        IEnumerable<Booking> All();
+        IEnumerable<Booking> ForPassenger(string passengerId);
+        void Save();
+    }
+
+    public class BookingService : IBookingService
+    {
+        private readonly IStorage<Dictionary<string, Booking>> _storage;
+        private readonly Dictionary<string, Booking> _bookings;
+        private readonly IFlightService _flightService;
+
+        public BookingService(IStorage<Dictionary<string, Booking>> storage, IFlightService flightService)
         {
-            var filteredBookings = _bookings.AsQueryable();
+            _storage = storage;
+            _bookings = storage.Load();
+            _flightService = flightService;
+        }
 
+        public IEnumerable<Booking> All() => _bookings.Values;
+        public IEnumerable<Booking> ForPassenger(string passengerId) => _bookings.Values.Where(b => b.Passenger.Id.Equals(passengerId, StringComparison.OrdinalIgnoreCase));
+
+        public IEnumerable<Booking> FilterBookings(string? passengerName = null, string? flightNumber = null, string? departureCountry = null, string? destinationCountry = null, string? departureAirport = null, string? arrivalAirport = null, DateTime? departureDate = null, FlightClass? flightClass = null, decimal? maxPrice = null)
+        {
+            var q = _bookings.Values.AsEnumerable();
             if (!string.IsNullOrWhiteSpace(passengerName))
-                filteredBookings = filteredBookings.Where(b => b.Passenger.Name.Contains(passengerName, StringComparison.OrdinalIgnoreCase));
+                q = q.Where(b => b.Passenger.FullName.Contains(passengerName, StringComparison.OrdinalIgnoreCase));
 
-            filteredBookings = ApplyFilter(filteredBookings, b => flightNumber, b => b.Flight.FlightNumber);
-            filteredBookings = ApplyFilter(filteredBookings, b => departureCountry, b => b.Flight.DepartureCountry);
-            filteredBookings = ApplyFilter(filteredBookings, b => destinationCountry, b => b.Flight.DestinationCountry);
-            filteredBookings = ApplyFilter(filteredBookings, b => departureAirport, b => b.Flight.DepartureAirport);
-            filteredBookings = ApplyFilter(filteredBookings, b => arrivalAirport, b => b.Flight.ArrivalAirport);
+            q = ApplyFilter(q, flightNumber, b => b.Flight.FlightNumber);
+            q = ApplyFilter(q, departureCountry, b => b.Flight.DepartureCountry);
+            q = ApplyFilter(q, destinationCountry, b => b.Flight.DestinationCountry);
+            q = ApplyFilter(q, departureAirport, b => b.Flight.DepartureAirport);
+            q = ApplyFilter(q, arrivalAirport, b => b.Flight.ArrivalAirport);
 
             if (departureDate.HasValue)
-                filteredBookings = filteredBookings.Where(b => b.Flight.DepartureDate.Date == departureDate.Value.Date);
+                q = q.Where(b => b.Flight.DepartureDate.Date == departureDate.Value.Date);
 
             if (flightClass.HasValue)
-                filteredBookings = filteredBookings.Where(b => b.Class == flightClass.Value);
+                q = q.Where(b => b.Class == flightClass.Value);
 
             if (maxPrice.HasValue)
-                filteredBookings = filteredBookings.Where(b => b.PricePaid <= maxPrice.Value);
+                q = q.Where(b => b.PricePaid <= maxPrice.Value);
 
-            return filteredBookings.ToList();
+            return q.ToList();
         }
-        private static IQueryable<Booking> ApplyFilter(IQueryable<Booking> source, Func<Booking, string?> getFilterValue, Func<Booking, string> getProperty)
+
+        private static IEnumerable<Booking> ApplyFilter(IEnumerable<Booking> source, string? filterValue, Func<Booking, string> selector)
         {
-            var value = getFilterValue(source.FirstOrDefault() ?? null);
-            if (!string.IsNullOrWhiteSpace(value))
-                return source.Where(b => getProperty(b).Equals(value, StringComparison.OrdinalIgnoreCase));
-            return source;
+            if (string.IsNullOrWhiteSpace(filterValue)) return source;
+            return source.Where(b => selector(b).Equals(filterValue, StringComparison.OrdinalIgnoreCase));
         }
 
+        public Booking CreateBooking(Passenger passenger, Flight flight, FlightClass @class)
+        {
+            if (!_flightService.TryReserveSeat(flight, @class))
+                throw new InvalidOperationException("No seats available in selected class.");
+
+            var price = @class.GetPrice(flight);
+            var booking = new Booking
+            {
+                BookingId = Guid.NewGuid().ToString("N"),
+                Passenger = passenger,
+                Flight = flight,
+                Class = @class,
+                BookingDate = DateTime.UtcNow,
+                PricePaid = price
+            };
+
+            _bookings[booking.BookingId] = booking;
+            Save();
+            _flightService.Save();
+            return booking;
+        }
+
+        public bool CancelBooking(string bookingId)
+        {
+            if (_bookings.TryGetValue(bookingId, out var booking))
+            {
+                _bookings.Remove(bookingId);
+                _flightService.ReleaseSeat(booking.Flight, booking.Class);
+                Save();
+                _flightService.Save();
+                return true;
+            }
+            return false;
+        }
+
+        public void Save() => _storage.Save(_bookings);
     }
 }
