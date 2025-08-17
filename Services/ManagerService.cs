@@ -1,34 +1,31 @@
-﻿using AirportTicketBookingSystem.Models;
-using AirportTicketBookingSystem.Services;
-using AirportTicketBookingSystem.Helpers;
-using AirportTicketBookingSystem.Enums;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
+using AirportTicketBookingSystem.Enums;
+using AirportTicketBookingSystem.Helpers;
 
 namespace AirportTicketBookingSystem.Services
 {
     public class ManagerService
     {
-        private List<Flight> _flights;
-        private BookingService _bookingService;
+        private readonly IFlightService _flightService;
+        private readonly IBookingService _bookingService;
 
-        public ManagerService(List<Booking> bookings)
+        public ManagerService(IFlightService flightService, IBookingService bookingService)
         {
-            _flights = FlightStorage.LoadFlights();
-            _bookingService = new BookingService(bookings);
+            _flightService = flightService;
+            _bookingService = bookingService;
         }
 
         public void Start()
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
-            ValidationPrinter.PrintValidationRules<Flight>();
 
             while (true)
             {
                 Console.WriteLine("\nManager Options:");
                 Console.WriteLine("1: Load Flights from CSV");
                 Console.WriteLine("2: Filter Bookings");
+                Console.WriteLine("3: List All Flights");
                 Console.WriteLine("0: Exit");
                 Console.Write("Select an option: ");
                 var choice = Console.ReadLine();
@@ -36,10 +33,14 @@ namespace AirportTicketBookingSystem.Services
                 switch (choice)
                 {
                     case "1":
+                        ValidationPrinter.PrintValidationRules<AirportTicketBookingSystem.Models.Flight>("Flight");
                         LoadFlightsFromCsv();
                         break;
                     case "2":
                         FilterBookings();
+                        break;
+                    case "3":
+                        Helpers.FlightPrinter.PrintFlights(_flightService.All().ToList());
                         break;
                     case "0":
                         return;
@@ -63,13 +64,13 @@ namespace AirportTicketBookingSystem.Services
             var importer = new CsvFlightImporter();
             var (newFlights, errors) = importer.ImportFlightsFromCsv(filePath);
 
-            FlightPrinter.PrintErrors(errors);
+            Helpers.FlightPrinter.PrintErrors(errors);
 
             if (newFlights.Any())
             {
-                _flights.AddRange(newFlights); // Append new flights
-                FlightPrinter.PrintFlights(newFlights);
-                FlightStorage.SaveFlights(_flights); // Save all flights
+                _flightService.AddFlights(newFlights);
+                _flightService.Save();
+                Helpers.FlightPrinter.PrintFlights(newFlights);
                 Console.WriteLine("Flights loaded and saved successfully.");
             }
             else
@@ -130,13 +131,7 @@ namespace AirportTicketBookingSystem.Services
             if (!results.Any())
                 Console.WriteLine("No bookings matched your filters.");
             else
-            {
-                Console.WriteLine($"\nFound {results.Count} booking(s):");
-                foreach (var b in results)
-                {
-                    Console.WriteLine($"Booking {b.BookingId}: {b.Passenger.Name}, Flight {b.Flight.FlightNumber}, Class: {b.Class}, Paid: {b.PricePaid}");
-                }
-            }
+                Helpers.BookingPrinter.PrintBookings(results);
         }
     }
 }

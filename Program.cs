@@ -1,7 +1,8 @@
-﻿using AirportTicketBookingSystem.Models;
-using AirportTicketBookingSystem.Services;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using AirportTicketBookingSystem.Models;
+using AirportTicketBookingSystem.Services;
+using AirportTicketBookingSystem.Storage;
 
 namespace AirportTicketBookingSystem
 {
@@ -12,26 +13,39 @@ namespace AirportTicketBookingSystem
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.WriteLine("Welcome to the Airport Ticket Booking System\n");
 
-            var bookings = new List<Booking>(); // Stored in-memory for now
+           
+            var flightStorage = new JsonStorage<List<Flight>>("flights.json", new List<Flight>());
+            var bookingStorage = new JsonStorage<Dictionary<string, Booking>>("bookings.json", new Dictionary<string, Booking>());
 
-            Console.WriteLine("Select mode:");
-            Console.WriteLine("1: Manager");
-            Console.WriteLine("2: Passenger");
-            Console.Write("Choice: ");
-            var choice = Console.ReadLine();
+           
+            IFlightService flightService = new FlightService(flightStorage);
+            IBookingService bookingService = new BookingService(bookingStorage, flightService);
 
-            switch (choice)
+            while (true)
             {
-                case "1":
-                    var manager = new ManagerService(bookings);
-                    manager.Start();
-                    break;
-                case "2":
-                    Console.WriteLine("Passenger mode not implemented yet.");
-                    break;
-                default:
-                    Console.WriteLine("Invalid choice.");
-                    break;
+                Console.WriteLine("Select mode:");
+                Console.WriteLine("1: Manager");
+                Console.WriteLine("2: Passenger");
+                Console.WriteLine("0: Exit");
+                Console.Write("Choice: ");
+                var choice = Console.ReadLine();
+
+                switch (choice)
+                {
+                    case "1":
+                        var manager = new ManagerService(flightService, bookingService);
+                        manager.Start();
+                        break;
+                    case "2":
+                        var passenger = new PassengerService(flightService, bookingService);
+                        passenger.Start();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        break;
+                }
             }
         }
     }

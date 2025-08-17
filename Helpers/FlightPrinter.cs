@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AirportTicketBookingSystem.Presentation
+namespace AirportTicketBookingSystem.Helpers
 {
     public static class FlightPrinter
     {

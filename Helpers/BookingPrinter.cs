@@ -11,7 +11,7 @@ namespace AirportTicketBookingSystem.Helpers
             Console.WriteLine($"\nFound {bookings.Count()} booking(s):\n");
             foreach (var b in bookings)
             {
-                Console.WriteLine($"BookingId: {b.BookingId}, Passenger: {b.Passenger.Name}, Flight: {b.Flight.FlightNumber}, Class: {b.Class}, PricePaid: {b.PricePaid:C}, BookingDate: {b.BookingDate}");
+                Console.WriteLine($"BookingId: {b.BookingId}, Passenger: {b.Passenger.FullName}, Flight: {b.Flight.FlightNumber}, Class: {b.Class}, PricePaid: {b.PricePaid:C}, BookingDate: {b.BookingDate}");
             }
         }
     }

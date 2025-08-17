@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Reflection;
 
 namespace AirportTicketBookingSystem.Helpers
 {
@@ -12,7 +11,6 @@ namespace AirportTicketBookingSystem.Helpers
         {
             var type = typeof(T);
             var props = type.GetProperties();
-
             var list = new List<FieldValidationInfo>();
 
             foreach (var prop in props)
@@ -33,23 +31,18 @@ namespace AirportTicketBookingSystem.Helpers
                         case RequiredAttribute:
                             info.Constraints.Add("Required");
                             break;
-
                         case RangeAttribute range:
                             info.Constraints.Add($"Range: {range.Minimum} to {range.Maximum}");
                             break;
-
                         case StringLengthAttribute strLen:
                             info.Constraints.Add($"Max Length: {strLen.MaximumLength}");
                             break;
-
                         case DataTypeAttribute dt:
                             info.Constraints.Add($"Data Type: {dt.DataType}");
                             break;
-
                         case RegularExpressionAttribute regex:
                             info.Constraints.Add($"Regex: {regex.Pattern}");
                             break;
-
                     }
                 }
 
@@ -67,8 +60,8 @@ namespace AirportTicketBookingSystem.Helpers
 
     public class FieldValidationInfo
     {
-        public string FieldName { get; set; }
-        public string FieldType { get; set; }
-        public List<string> Constraints { get; set; } = new List<string>();
+        public string FieldName { get; set; } = string.Empty;
+        public string FieldType { get; set; } = string.Empty;
+        public List<string> Constraints { get; set; } = new();
     }
 }

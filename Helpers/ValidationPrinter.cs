@@ -1,17 +1,12 @@
-﻿using AirportTicketBookingSystem.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
-namespace AirportTicketBookingSystem.Presentation
+namespace AirportTicketBookingSystem.Helpers
 {
     public static class ValidationPrinter
     {
-        public static void PrintValidationRules<T>()
+        public static void PrintValidationRules<T>(string modelName)
         {
-            Console.WriteLine("Flight Model Validation Rules:");
+            Console.WriteLine($"{modelName} Validation Rules:");
             var validations = ValidationMetadataHelper.GetValidationMetadata<T>();
             foreach (var fieldInfo in validations)
             {
