@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using AirportTicketBookingSystem.Enums;
 using AirportTicketBookingSystem.Helpers;
 using AirportTicketBookingSystem.Models;
@@ -83,52 +84,41 @@ namespace AirportTicketBookingSystem.Services
         {
             Console.WriteLine("\nEnter filter parameters (leave blank to skip):");
 
+            var filter = new BookingFilter();
+
             Console.Write("Passenger Name: ");
-            var passengerName = Console.ReadLine();
+            filter.PassengerName = Console.ReadLine();
 
             Console.Write("Flight Number: ");
-            var flightNumber = Console.ReadLine();
+            filter.FlightNumber = Console.ReadLine();
 
             Console.Write("Departure Country: ");
-            var departureCountry = Console.ReadLine();
+            filter.DepartureCountry = Console.ReadLine();
 
             Console.Write("Destination Country: ");
-            var destinationCountry = Console.ReadLine();
+            filter.DestinationCountry = Console.ReadLine();
 
             Console.Write("Departure Airport: ");
-            var departureAirport = Console.ReadLine();
+            filter.DepartureAirport = Console.ReadLine();
 
             Console.Write("Arrival Airport: ");
-            var arrivalAirport = Console.ReadLine();
+            filter.ArrivalAirport = Console.ReadLine();
 
             Console.Write("Departure Date (yyyy-MM-dd): ");
-            DateTime? departureDate = null;
             if (DateTime.TryParse(Console.ReadLine(), out var dt))
-                departureDate = dt;
+                filter.DepartureDate = dt;
 
             Console.Write("Flight Class (Economy, Business, FirstClass): ");
-            FlightClass? flightClass = null;
             if (Enum.TryParse<FlightClass>(Console.ReadLine(), true, out var fc))
-                flightClass = fc;
+                filter.FlightClass = fc;
 
             Console.Write("Max Price: ");
-            decimal? maxPrice = null;
             if (decimal.TryParse(Console.ReadLine(), out var price))
-                maxPrice = price;
+                filter.MaxPrice = price;
 
-            var results = _bookingService.FilterBookings(
-                passengerName,
-                flightNumber,
-                departureCountry,
-                destinationCountry,
-                departureAirport,
-                arrivalAirport,
-                departureDate,
-                flightClass,
-                maxPrice
-            ).ToList();
+            var results = _bookingService.GetBookings(filter).ToList();
 
-            if (results.Count == 0)
+            if (!results.Any())
                 Console.WriteLine("No bookings matched your filters.");
             else
                 BookingPrinter.PrintBookings(results);

@@ -2,29 +2,12 @@
 using AirportTicketBookingSystem.Extensions;
 using AirportTicketBookingSystem.Models;
 using AirportTicketBookingSystem.Storage;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AirportTicketBookingSystem.Services
 {
-    public interface IBookingService
-    {
-        IEnumerable<Booking> FilterBookings(
-            string? passengerName = null,
-            string? flightNumber = null,
-            string? departureCountry = null,
-            string? destinationCountry = null,
-            string? departureAirport = null,
-            string? arrivalAirport = null,
-            DateTime? departureDate = null,
-            FlightClass? flightClass = null,
-            decimal? maxPrice = null);
-
-        Booking CreateBooking(Passenger passenger, Flight flight, FlightClass @class);
-        bool CancelBooking(string bookingId);
-        IEnumerable<Booking> All();
-        IEnumerable<Booking> ForPassenger(string passengerId);
-        void Save();
-    }
-
     public class BookingService : IBookingService
     {
         private readonly IStorage<Dictionary<string, Booking>> _storage;
@@ -38,29 +21,32 @@ namespace AirportTicketBookingSystem.Services
             _flightService = flightService;
         }
 
-        public IEnumerable<Booking> All() => _bookings.Values;
-        public IEnumerable<Booking> ForPassenger(string passengerId) => _bookings.Values.Where(b => b.Passenger.Id.Equals(passengerId, StringComparison.OrdinalIgnoreCase));
-
-        public IEnumerable<Booking> FilterBookings(string? passengerName = null, string? flightNumber = null, string? departureCountry = null, string? destinationCountry = null, string? departureAirport = null, string? arrivalAirport = null, DateTime? departureDate = null, FlightClass? flightClass = null, decimal? maxPrice = null)
+        public IEnumerable<Booking> GetBookings(BookingFilter? filter = null)
         {
             var q = _bookings.Values.AsEnumerable();
-            if (!string.IsNullOrWhiteSpace(passengerName))
-                q = q.Where(b => b.Passenger.FullName.Contains(passengerName, StringComparison.OrdinalIgnoreCase));
 
-            q = ApplyFilter(q, flightNumber, b => b.Flight.FlightNumber);
-            q = ApplyFilter(q, departureCountry, b => b.Flight.DepartureCountry);
-            q = ApplyFilter(q, destinationCountry, b => b.Flight.DestinationCountry);
-            q = ApplyFilter(q, departureAirport, b => b.Flight.DepartureAirport);
-            q = ApplyFilter(q, arrivalAirport, b => b.Flight.ArrivalAirport);
+            if (filter == null) return q;
 
-            if (departureDate.HasValue)
-                q = q.Where(b => b.Flight.DepartureDate.Date == departureDate.Value.Date);
+            if (!string.IsNullOrWhiteSpace(filter.PassengerName))
+                q = q.Where(b => b.Passenger.FullName.Contains(filter.PassengerName, StringComparison.OrdinalIgnoreCase));
 
-            if (flightClass.HasValue)
-                q = q.Where(b => b.Class == flightClass.Value);
+            if (!string.IsNullOrWhiteSpace(filter.PassengerId))
+                q = q.Where(b => b.Passenger.Id.Equals(filter.PassengerId, StringComparison.OrdinalIgnoreCase));
 
-            if (maxPrice.HasValue)
-                q = q.Where(b => b.PricePaid <= maxPrice.Value);
+            q = ApplyFilter(q, filter.FlightNumber, b => b.Flight.FlightNumber);
+            q = ApplyFilter(q, filter.DepartureCountry, b => b.Flight.DepartureCountry);
+            q = ApplyFilter(q, filter.DestinationCountry, b => b.Flight.DestinationCountry);
+            q = ApplyFilter(q, filter.DepartureAirport, b => b.Flight.DepartureAirport);
+            q = ApplyFilter(q, filter.ArrivalAirport, b => b.Flight.ArrivalAirport);
+
+            if (filter.DepartureDate.HasValue)
+                q = q.Where(b => b.Flight.DepartureDate.Date == filter.DepartureDate.Value.Date);
+
+            if (filter.FlightClass.HasValue)
+                q = q.Where(b => b.Class == filter.FlightClass.Value);
+
+            if (filter.MaxPrice.HasValue)
+                q = q.Where(b => b.PricePaid <= filter.MaxPrice.Value);
 
             return q.ToList();
         }

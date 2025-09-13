@@ -95,7 +95,7 @@ namespace AirportTicketBookingSystem.Services
         {
             Console.Write("Passenger ID: ");
             var pid = Console.ReadLine() ?? string.Empty;
-            var my = _bookingService.ForPassenger(pid).ToList();
+            var my = _bookingService.GetBookings(new BookingFilter { PassengerId = pid }).ToList();
             if (!my.Any()) Console.WriteLine("No bookings.");
             else BookingPrinter.PrintBookings(my);
         }
