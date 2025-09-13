@@ -46,11 +46,6 @@ namespace AirportTicketBookingSystem.Helpers
                     }
                 }
 
-                if (!info.Constraints.Any())
-                {
-                    info.Constraints.Add("No constraints");
-                }
-
                 list.Add(info);
             }
 

@@ -8,12 +8,20 @@ namespace AirportTicketBookingSystem.Helpers
         {
             Console.WriteLine($"{modelName} Validation Rules:");
             var validations = ValidationMetadataHelper.GetValidationMetadata<T>();
-            foreach (var fieldInfo in validations)
+             foreach (var fieldInfo in validations)
             {
                 Console.WriteLine($"- {fieldInfo.FieldName} ({fieldInfo.FieldType}):");
-                foreach (var constraint in fieldInfo.Constraints)
+
+                if (fieldInfo.Constraints.Any())
                 {
-                    Console.WriteLine($"    * {constraint}");
+                    foreach (var constraint in fieldInfo.Constraints)
+                    {
+                        Console.WriteLine($"    * {constraint}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("    * No constraints");
                 }
             }
             Console.WriteLine("\n---------------------------------------------\n");
