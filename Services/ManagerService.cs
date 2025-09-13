@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Linq;
 using AirportTicketBookingSystem.Enums;
 using AirportTicketBookingSystem.Helpers;
+using AirportTicketBookingSystem.Models;
 
 namespace AirportTicketBookingSystem.Services
 {
@@ -33,14 +33,14 @@ namespace AirportTicketBookingSystem.Services
                 switch (choice)
                 {
                     case "1":
-                        ValidationPrinter.PrintValidationRules<AirportTicketBookingSystem.Models.Flight>("Flight");
+                        ValidationPrinter.PrintValidationRules<Flight>("Flight");
                         LoadFlightsFromCsv();
                         break;
                     case "2":
                         FilterBookings();
                         break;
                     case "3":
-                        Helpers.FlightPrinter.PrintFlights(_flightService.All().ToList());
+                        FlightPrinter.PrintFlights(_flightService.All().ToList());
                         break;
                     case "0":
                         return;
@@ -64,13 +64,13 @@ namespace AirportTicketBookingSystem.Services
             var importer = new CsvFlightImporter();
             var (newFlights, errors) = importer.ImportFlightsFromCsv(filePath);
 
-            Helpers.FlightPrinter.PrintErrors(errors);
+            ConsolePrinter.PrintErrors(errors);
 
             if (newFlights.Any())
             {
                 _flightService.AddFlights(newFlights);
                 _flightService.Save();
-                Helpers.FlightPrinter.PrintFlights(newFlights);
+                FlightPrinter.PrintFlights(newFlights);
                 Console.WriteLine("Flights loaded and saved successfully.");
             }
             else
@@ -128,10 +128,10 @@ namespace AirportTicketBookingSystem.Services
                 maxPrice
             ).ToList();
 
-            if (!results.Any())
+            if (results.Count == 0)
                 Console.WriteLine("No bookings matched your filters.");
             else
-                Helpers.BookingPrinter.PrintBookings(results);
+                BookingPrinter.PrintBookings(results);
         }
     }
 }
