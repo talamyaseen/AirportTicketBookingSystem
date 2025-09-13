@@ -13,14 +13,38 @@ namespace AirportTicketBookingSystem
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.WriteLine("Welcome to the Airport Ticket Booking System\n");
 
-           
             var flightStorage = new JsonStorage<List<Flight>>("flights.json", new List<Flight>());
             var bookingStorage = new JsonStorage<Dictionary<string, Booking>>("bookings.json", new Dictionary<string, Booking>());
 
-           
             IFlightService flightService = new FlightService(flightStorage);
             IBookingService bookingService = new BookingService(bookingStorage, flightService);
 
+
+            if (args.Length > 0)
+            {
+                string mode = args[0].ToLower();
+                if (mode == "manager")
+                {
+                    new ManagerService(flightService, bookingService).Start();
+                    return;
+                }
+                else if (mode == "passenger")
+                {
+                    new PassengerService(flightService, bookingService).Start();
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid argument. Launching interactive mode.\n");
+                }
+            }
+
+            // Fallback to interactive menu
+            RunInteractiveMode();
+        }
+
+        static void RunInteractiveMode()
+        {
             while (true)
             {
                 Console.WriteLine("Select mode:");
@@ -33,12 +57,10 @@ namespace AirportTicketBookingSystem
                 switch (choice)
                 {
                     case "1":
-                        var manager = new ManagerService(flightService, bookingService);
-                        manager.Start();
+                        new ManagerService(flightService, bookingService).Start();
                         break;
                     case "2":
-                        var passenger = new PassengerService(flightService, bookingService);
-                        passenger.Start();
+                        new PassengerService(flightService, bookingService).Start();
                         break;
                     case "0":
                         return;
