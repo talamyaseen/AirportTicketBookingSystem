@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
+using System.Linq; 
 using CsvHelper;
 using CsvHelper.Configuration;
 using AirportTicketBookingSystem.Models;
@@ -22,6 +23,7 @@ namespace AirportTicketBookingSystem.Services
                 return (flights, errors);
             }
 
+            IEnumerable<Flight> records;
             try
             {
                 using var reader = new StreamReader(filePath);
@@ -32,26 +34,27 @@ namespace AirportTicketBookingSystem.Services
                     TrimOptions = TrimOptions.Trim
                 });
 
-                var records = csv.GetRecords<Flight>();
-                foreach (var flight in records)
-                {
-                    var context = new ValidationContext(flight);
-                    var results = new List<ValidationResult>();
-                    if (!Validator.TryValidateObject(flight, context, results, true))
-                    {
-                        foreach (var error in results)
-                        {
-                            errors.Add($"Flight {flight.FlightNumber} is invalid: {error.ErrorMessage}");
-                        }
-                        continue;
-                    }
-
-                    flights.Add(flight);
-                }
+                records = csv.GetRecords<Flight>().ToList(); 
             }
             catch (Exception ex)
             {
                 errors.Add($"Error reading CSV: {ex.Message}");
+                return (flights, errors);
+            }
+
+            foreach (var flight in records)
+            {
+                var context = new ValidationContext(flight);
+                var results = new List<ValidationResult>();
+                if (!Validator.TryValidateObject(flight, context, results, true))
+                {
+                    var groupedErrors = results.GroupBy(r => flight.FlightNumber)
+                        .Select(g => $"Flight {g.Key} is invalid: {string.Join("; ", g.Select(r => r.ErrorMessage))}");
+                    errors.AddRange(groupedErrors);
+                    continue;
+                }
+
+                flights.Add(flight);
             }
 
             return (flights, errors);
