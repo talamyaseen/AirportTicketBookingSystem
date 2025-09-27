@@ -8,6 +8,8 @@ namespace AirportTicketBookingSystem
 {
     class Program
     {
+        static IFlightService flightService;
+        static IBookingService bookingService;
         static void Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -16,8 +18,8 @@ namespace AirportTicketBookingSystem
             var flightStorage = new JsonStorage<List<Flight>>("flights.json", new List<Flight>());
             var bookingStorage = new JsonStorage<Dictionary<string, Booking>>("bookings.json", new Dictionary<string, Booking>());
 
-            IFlightService flightService = new FlightService(flightStorage);
-            IBookingService bookingService = new BookingService(bookingStorage, flightService);
+            flightService = new FlightService(flightStorage);
+            bookingService = new BookingService(bookingStorage, flightService);
 
 
             if (args.Length > 0)
